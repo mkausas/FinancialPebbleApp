@@ -1,0 +1,19 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "mkausas@gmail.com",
+    "longName": "Financial Watch App",
+    "projectType": "native",
+    "resources": {
+        "media": []
+    },
+    "sdkVersion": "3",
+    "shortName": "Financial Watch App",
+    "uuid": "50022142-7d98-4da6-86f0-4d2c9f69606b",
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}
