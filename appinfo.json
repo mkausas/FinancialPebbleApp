@@ -1,5 +1,8 @@
 {
-    "appKeys": {},
+    "appKeys": {
+        "BALANCE": 0,
+        "BILL_COUNT": 1
+    },
     "capabilities": [
         ""
     ],
@@ -14,7 +17,7 @@
     "targetPlatforms": [
         "basalt"
     ],
-    "uuid": "50022142-7d98-4da6-86f0-4d2c9f69606b",
+    "uuid": "8e084bd3-3067-429e-b222-5cb38f207b5f",
     "versionLabel": "1.0",
     "watchapp": {
         "watchface": false

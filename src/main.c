@@ -1,5 +1,7 @@
 #include <pebble.h>
 
+#define BALANCE 0
+#define BILL_COUNT 1
 
 Window* window;
 
@@ -33,8 +35,8 @@ void bars_update_callback(Layer *me, GContext* ctx) {
 
 void progress_update_callback(Layer *me, GContext* ctx) {
   (void)me;
-time_t now = time(NULL);
-	tn = localtime(&now);
+  time_t now = time(NULL);
+  tn = localtime(&now);
   graphics_context_set_stroke_color(ctx, GColorWhite);
   
   
@@ -108,7 +110,7 @@ void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   text_layer_set_text(text_time_layer, time_text);
 
   
-    //Redraw layer
+  //Redraw layer
   layer_mark_dirty(main_layer);
 }
 
@@ -119,11 +121,11 @@ static void handle_init(void) {
   window_stack_push(window, true /* Animated */);
   window_set_background_color(window, GColorBlack);
 
-	  window_layer = window_get_root_layer(window);
+  window_layer = window_get_root_layer(window);
   
-    //Current Account Balance text
+  //Current Account Balance text
   current_balance_text = text_layer_create(GRect(8, 49, 144-16, 49+28));   
-  text_layer_set_text_color(current_balance_text, GColorGreen);
+  text_layer_set_text_color(current_balance_text, GColorWhite);
   text_layer_set_background_color(current_balance_text, GColorClear);
   text_layer_set_font(current_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   layer_add_child(window_layer, text_layer_get_layer(current_balance_text));
@@ -153,7 +155,7 @@ static void handle_init(void) {
   main_layer = layer_create(layer_get_frame(window_layer));
   layer_set_update_proc(main_layer, progress_update_callback);
   layer_add_child(window_layer, main_layer);
-	
+  
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
 }
 
@@ -161,28 +163,80 @@ static void handle_init(void) {
 static void handle_destroy(void) {
   //Texts
 
-
-  
-    //Current Balance
-    text_layer_destroy(current_balance_text);
+  //Current Balance
+  text_layer_destroy(current_balance_text);
 
   //Clock text
   text_layer_destroy(text_time_layer);
   
   layer_destroy(bars_layer);
   
-    layer_destroy(main_layer);
+  layer_destroy(main_layer);
   tick_timer_service_unsubscribe();
   layer_destroy(window_layer);
-	
+  
   window_destroy(window);
 }
 
+static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+  static char balance_buffer[8];
+  static char billing_length_buffer[8];
+
+  // Read first item
+  Tuple *t = dict_read_first(iterator);
+
+  APP_LOG(APP_LOG_LEVEL_INFO, "Before read!");
+
+  // For all items
+  while(t != NULL) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Key %d!", (int)t->key);
+    
+    switch(t->key) {
+      case BALANCE:
+        snprintf(balance_buffer, sizeof(balance_buffer), "%d", (int)t->value->int32);
+        printf("Current Balance %s\n", balance_buffer);
+        break;      
+      case BILL_COUNT:
+        snprintf(billing_length_buffer, sizeof(billing_length_buffer), "%d", (int)t->value->int32);
+        printf("Number of bills %s\n", billing_length_buffer);
+        break;
+      
+    default:
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
+      break;
+    }
+    
+    
+    // Look for next item
+    t = dict_read_next(iterator);
+  }}
+  
+static void inbox_dropped_callback(AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
+}
+
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+}
+
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
+}
 
 int main(void) {
    handle_init();
 
-   app_event_loop();
-	
+  // Register callbacks
+  app_message_register_inbox_received(inbox_received_callback);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
+  app_message_register_outbox_sent(outbox_sent_callback);
+  
+  // Open AppMessage
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  
+
+  app_event_loop();
+  
    handle_destroy();
 }
