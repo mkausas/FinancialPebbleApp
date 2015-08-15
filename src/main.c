@@ -17,6 +17,7 @@ Layer *bars_layer;
 Layer *main_layer;
 Layer *window_layer;
 
+static double accounts_grab =0; //the amount in the account currently
 
 void bars_update_callback(Layer *me, GContext* ctx) {
   (void)me;
@@ -42,12 +43,13 @@ void progress_update_callback(Layer *me, GContext* ctx) {
   
 
   //Calculate the percentage of alotted funds based on current spending amount
-  double accounts_grab = 150.50;
+   //accounts_grab = 150.50;
   double capital_one_grab = 50.00;
   int totalBalance = accounts_grab*100;
   int spentBalance = capital_one_grab*100;
   int bar_percent; 
-  int total_left = totalBalance - spentBalance;
+  
+  //TODO: Add something that waits for js to update
   
   //Manual limit
   double set_limit = 60;
@@ -67,9 +69,9 @@ void progress_update_callback(Layer *me, GContext* ctx) {
   
   //turns how much total left into currency form
   static char t_dollar[20];
-  snprintf(t_dollar,sizeof(t_dollar),"%d",total_left/100);
+  snprintf(t_dollar,sizeof(t_dollar),"%d",totalBalance/100);
   static char t_cent[10];
-  snprintf(t_cent, sizeof(t_cent),"%02d",total_left%100);
+  snprintf(t_cent, sizeof(t_cent),"%02d",totalBalance%100);
   static char total_balance[20];
   snprintf(total_balance, sizeof(total_balance), "%s%s%s%s", "Total: $", t_dollar, ".", t_cent);
   text_layer_set_text(total_balance_text, total_balance);
@@ -195,6 +197,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       case BALANCE:
         snprintf(balance_buffer, sizeof(balance_buffer), "%d", (int)t->value->int32);
         printf("Current Balance %s\n", balance_buffer);
+        accounts_grab = t->value->int32;
         break;      
       case BILL_COUNT:
         snprintf(billing_length_buffer, sizeof(billing_length_buffer), "%d", (int)t->value->int32);
