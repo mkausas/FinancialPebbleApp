@@ -4,7 +4,7 @@ function getInfo(type) {
   var xmlHttp = null;
   xmlHttp = new XMLHttpRequest();
   
-  var apiKey = "72aafb5e4adc36c1b33cbd9a7549853a";
+  var apiKey = "";
   var requestURL = "";
   var requestType = "GET";
   switch (type) {
