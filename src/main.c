@@ -18,7 +18,7 @@ Layer *main_layer;
 Layer *window_layer;
 
 static double accounts_grab =0; //the amount in the account currently
-bool js_updated = false;
+bool js_updated = false;  
 
 void bars_update_callback(Layer *me, GContext* ctx) {
   (void)me;
@@ -52,21 +52,11 @@ void progress_update_callback(Layer *me, GContext* ctx) {
   //TODO: Add something that waits for js to update
   
   //Manual limit
-  double set_limit = 60; //TODO: set by settings
+  double set_limit = 60; //TODO: set by settings  
   int budget_left = set_limit*100 - spentBalance;
   
   
-  
-  //turns budget left into currency form
-  static char b_dollar[20];
-  snprintf(b_dollar,sizeof(b_dollar),"%d",budget_left/100);
-  static char b_cent[10];
-  snprintf(b_cent, sizeof(b_cent),"%02d",budget_left%100);
-  static char final_balance[20];
-  snprintf(final_balance, sizeof(final_balance), "%s%s%s%s", "$", b_dollar, ".", b_cent);
-  text_layer_set_text(current_balance_text, final_balance);
-  
-  if(js_updated){
+   if(js_updated){
     //turns how much total left into currency form
     static char t_dollar[20];
     snprintf(t_dollar,sizeof(t_dollar),"%d",totalBalance/100);
@@ -79,6 +69,16 @@ void progress_update_callback(Layer *me, GContext* ctx) {
     //TODO maybe make a smaller font for this part
     text_layer_set_text(total_balance_text, "Loading balance...");
   }
+  
+  //turns how much total left into currency form
+  static char t_dollar[20];
+  snprintf(t_dollar,sizeof(t_dollar),"%d",totalBalance/100);
+  static char t_cent[10];
+  snprintf(t_cent, sizeof(t_cent),"%02d",totalBalance%100);
+  static char total_balance[20];
+  snprintf(total_balance, sizeof(total_balance), "%s%s%s%s", "Total: $", t_dollar, ".", t_cent);
+  text_layer_set_text(total_balance_text, total_balance);
+  
   
   
   //sets percentage for progress bar
@@ -136,7 +136,7 @@ static void handle_init(void) {
   layer_add_child(window_layer, text_layer_get_layer(current_balance_text));
   
   //total account balance text
-  total_balance_text = text_layer_create(GRect(8,95,144,95+22));
+  total_balance_text = text_layer_create(GRect(8,95,144,95+22));  
   text_layer_set_text_color(total_balance_text,GColorWhite);
   text_layer_set_background_color(total_balance_text,GColorClear);
   text_layer_set_font(total_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_18));
@@ -144,7 +144,7 @@ static void handle_init(void) {
 
 
   //Clock text
-  text_time_layer = text_layer_create(GRect(8, 60, 144, 60+20));
+  text_time_layer = text_layer_create(GRect(8, 60, 144, 60+20));  
   text_layer_set_text_color(text_time_layer, GColorWhite);
   text_layer_set_background_color(text_time_layer, GColorClear);
   text_layer_set_font(text_time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
@@ -183,36 +183,91 @@ static void handle_destroy(void) {
   window_destroy(window);
 }
 
+
+ typedef struct {
+  char payee[32];
+  int amount;
+  int month;
+  int day;
+  int year;
+} Bill;
+
+Bill *bills;
+int numBills = 0;
+
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   static char balance_buffer[8];
   static char billing_length_buffer[8];
+  static char payee[32];
+
 
   // Read first item
   Tuple *t = dict_read_first(iterator);
 
-  APP_LOG(APP_LOG_LEVEL_INFO, "Before read!");
-
+  
+  
   // For all items
   while(t != NULL) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "Key %d!", (int)t->key);
+
+    int key = t->key;
+    int keyIndexed = key - 2;
     
-    switch(t->key) {
-      case BALANCE:
-        snprintf(balance_buffer, sizeof(balance_buffer), "%d", (int)t->value->int32);
-        printf("Current Balance %s\n", balance_buffer);
-        accounts_grab = t->value->int32;
-        break;      
-      case BILL_COUNT:
-        snprintf(billing_length_buffer, sizeof(billing_length_buffer), "%d", (int)t->value->int32);
-        printf("Number of bills %s\n", billing_length_buffer);
-        break;
+    // is part of a bill
+    if (keyIndexed >= 0) {
+      int billNumber = (int) (keyIndexed / 5);  
+      printf("Bill Number = %d, key = %d", billNumber, key);
       
-    default:
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
-      break;
-    }
+      keyIndexed %= 5;
+      switch(keyIndexed) {
+        // payee
+        case 0:
+          snprintf(bills[billNumber].payee, sizeof(bills[billNumber].payee), "%s", t->value->cstring);
+          printf("Payee = %s\n", bills[billNumber].payee);
+          break;
+        
+        // payment amount
+        case 1:
+          bills[billNumber].amount = (int)t->value->int32;
+          printf("Amount = %d\n", bills[billNumber].amount);
+          break;
+        
+        // month
+        case 2:
+          bills[billNumber].month = (int)t->value->int32;
+          printf("Month = %d\n", bills[billNumber].month);
+          break;
+        
+        // day
+        case 3:
+          bills[billNumber].day = (int)t->value->int32;
+          printf("Day = %d\n", bills[billNumber].day);
+          break;
+        
+        // year
+        case 4:
+          bills[billNumber].year = (int)t->value->int32;
+          printf("Year = %d\n", bills[billNumber].year);
+          break;
+        
+      }
+    } 
     
-    js_updated = true;
+    // is either balance or bill count
+    else {
+      switch(t->key) {
+        case BALANCE:
+          snprintf(balance_buffer, sizeof(balance_buffer), "%d", (int)t->value->int32);
+          printf("Current Balance %s\n", balance_buffer);
+          accounts_grab = t->value->int32;
+          break;      
+        case BILL_COUNT:
+          snprintf(billing_length_buffer, sizeof(billing_length_buffer), "%d", (int)t->value->int32);
+          printf("Number of bills %s\n", billing_length_buffer);
+          numBills = (int)t->value->int32;
+          bills = (Bill *) calloc(numBills, sizeof(Bill));
+          break;
+      }
+    }
     
     // Look for next item
     t = dict_read_next(iterator);

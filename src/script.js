@@ -52,27 +52,32 @@ Pebble.addEventListener('ready',
     var numBills = json.length;
     console.log("Number of Bills: " + numBills);
     info["BILL_COUNT"] = numBills;
-//     for (var i = 0; i < numBills; i++) {
-//       var currentBill = json[i]; 
-//       console.log("Bill " + i);
-//       console.log("Payee: " + currentBill.payee);
-//       console.log("Payment Date: " + currentBill.payment_date);
-//       console.log("Payment Amount: " + currentBill.payment_amount);
-//       info[i + ""] = { 
-//         "payee": currentBill.payee,
-//         "date": currentBill.payment_date,
-//         "amount": currentBill.payment_amount
-// //       }; 
-//       info["1p"] = currentBill.payee;
-//       info["1d"] = currentBill.payment_date;
-//       info["1a"] = currentBill.payment_amount;
+    
+    for (var i = 0; i < numBills; i++) {
+      var currentBill = json[i]; 
+      console.log("Bill " + i);
+      console.log("Payee: " + currentBill.payee);
+      console.log("Payment Date: " + currentBill.payment_date);
+      console.log("Payment Amount: " + currentBill.payment_amount);
+      
+      var fullDate = currentBill.payment_date;
+      var splitDate = fullDate.split("/");
+      
+      var startingPoint = (i * 5) + 2;
+      // bill payee and amount
+      info[startingPoint + ""] = currentBill.payee;
+      info[startingPoint + 1 + ""] = currentBill.payment_amount;
+      
+      // Date info
+      info[startingPoint + 2 + ""] = parseInt(splitDate[0]);
+      info[startingPoint + 3 + ""] = parseInt(splitDate[1]);
+      info[startingPoint + 4 + ""] = parseInt(splitDate[2]);
+      console.log("Month " + parseInt(splitDate[0]));
+      console.log("Day " + parseInt(splitDate[1]));
+      console.log("Year " + parseInt(splitDate[2]));
       
       
-//       info[i + 1 + ""] = currentBill.payee;
-//       info["1d"] = currentBill.payment_date;
-//       info["1a"] = currentBill.payment_amount; 
-
-//     }
+    }
     
     Pebble.sendAppMessage(info,
       function(e) {
@@ -89,6 +94,7 @@ Pebble.addEventListener('ready',
 Pebble.addEventListener('appmessage',
   function(e) {
     console.log("AppMessage received!");
+    
     
     
   }                     
