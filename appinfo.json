@@ -11,6 +11,9 @@
     },
     "sdkVersion": "3",
     "shortName": "Financial Watch App",
+    "targetPlatforms": [
+        "basalt"
+    ],
     "uuid": "50022142-7d98-4da6-86f0-4d2c9f69606b",
     "versionLabel": "1.0",
     "watchapp": {

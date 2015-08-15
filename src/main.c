@@ -40,9 +40,10 @@ time_t now = time(NULL);
   
 
   //Calculate the percentage of alotted funds based on current spending amount
-  double capital_one_grab = 150.50;
-  int totalBalance = capital_one_grab*100;
-  int spentBalance = 50*100;
+  double accounts_grab = 150.50;
+  double capital_one_grab = 50.00;
+  int totalBalance = accounts_grab*100;
+  int spentBalance = capital_one_grab*100;
   int bar_percent; 
   int total_left = totalBalance - spentBalance;
   
@@ -74,8 +75,8 @@ time_t now = time(NULL);
   
   
   //sets percentage for progress bar
-  double percentageLeft = ((double)100/totalBalance)*total_left; 
-  percentageLeft = ((double)134/100)*percentageLeft; //Percent of bar based on % of balance
+  double percentageLeft = ((double)capital_one_grab/set_limit); 
+  percentageLeft = ((double)134*percentageLeft); //Percent of bar based on % of balance
   bar_percent = (int)percentageLeft;
   //fills the amount of progress for bar
   graphics_context_set_fill_color(ctx, GColorWhite);
@@ -122,7 +123,7 @@ static void handle_init(void) {
   
     //Current Account Balance text
   current_balance_text = text_layer_create(GRect(8, 49, 144-16, 49+28));   
-  text_layer_set_text_color(current_balance_text, GColorWhite);
+  text_layer_set_text_color(current_balance_text, GColorGreen);
   text_layer_set_background_color(current_balance_text, GColorClear);
   text_layer_set_font(current_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   layer_add_child(window_layer, text_layer_get_layer(current_balance_text));
