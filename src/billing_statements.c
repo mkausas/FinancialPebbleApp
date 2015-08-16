@@ -22,38 +22,38 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
   // Draw title text in the section header
   menu_cell_basic_header_draw(ctx, cell_layer, "Billing Statements");
 }
-// static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
-//     APP_LOG(APP_LOG_LEVEL_DEBUG, "enter draw row");
+static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "enter draw row");
 
-//     int row = cell_index->row;
-//     APP_LOG(APP_LOG_LEVEL_DEBUG, "crash");
+    int row = cell_index->row;
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "crash");
 
 //     APP_LOG(APP_LOG_LEVEL_DEBUG, "gettitle:%s, getdate:%s", getBills(row).title, getBills(row).fulldate);
 
-//     menu_cell_basic_draw(ctx, cell_layer, getBills(row).title, getBills(row).fulldate, NULL);
-// }
-
-static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
-  // Determine which section we're going to draw in
-  switch (cell_index->section) {
-    case 0:
-      // Use the row to specify which item we'll draw
-      switch (cell_index->row) {
-        case 0:
-          // This is a basic menu item with a title and subtitle
-//           printf("%s\n", getBills(cell_index->row).fulldate);
-          menu_cell_basic_draw(ctx, cell_layer, getBills(cell_index->row).title, NULL,
-                               //getBills(cell_index->row).fulldate, 
-                               NULL);
-          break;
-        case 1:
-          // This is a basic menu icon with a cycling icon
-          menu_cell_basic_draw(ctx, cell_layer, "Icon Item", "Select to cycle", NULL);
-          break;
-      }
-      break;
-  }
+    menu_cell_basic_draw(ctx, cell_layer, getBills(row).title, NULL, NULL);
 }
+
+// static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
+//   // Determine which section we're going to draw in
+//   switch (cell_index->section) {
+//     case 0:
+//       // Use the row to specify which item we'll draw
+//       switch (cell_index->row) {
+//         case 0:
+//           // This is a basic menu item with a title and subtitle
+// //           printf("%s\n", getBills(cell_index->row).fulldate);
+//           menu_cell_basic_draw(ctx, cell_layer, getBills(cell_index->row).title, NULL,
+//                                //getBills(cell_index->row).fulldate, 
+//                                NULL);
+//           break;
+//         case 1:
+//           // This is a basic menu icon with a cycling icon
+//           menu_cell_basic_draw(ctx, cell_layer, "Icon Item", "Select to cycle", NULL);
+//           break;
+//       }
+//       break;
+//   }
+// }
 
 static void menu_select_click(MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "clicked!");
