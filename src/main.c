@@ -218,87 +218,60 @@ int getNumBills(void) {
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-  static char balance_buffer[8];
-  static char billing_length_buffer[8];
-  static char payee[32];
 
-
-  // Read first item
-  Tuple *t = dict_read_first(iterator);
-
+  // start reading default items
+  Tuple *tuple;
   
+  // balance
+  tuple = dict_find(iterator, 0);
+  int accountBalance = (int) tuple->value->int32; 
+  accounts_grab = accountBalance;
+  printf("balance tuple value = %d", accountBalance);
   
-  // For all items
-  while(t != NULL) {
+  // num bills
+  tuple = dict_find(iterator, 1);
+  numBills = (int) tuple->value->int32;
+  printf("bill count tuple value = %d", numBills);
+  bills = (Bill *) calloc(numBills, sizeof(Bill));
+  
+  for (int i = 0; i < numBills; i++) {
+    printf("Bill number: %d\n", i);
+    
+    int startingPoint = (i * 5) + 2;
+    
+    // payee
+    tuple = dict_find(iterator, startingPoint);
+    snprintf(bills[i].payee, sizeof(bills[i].payee), "%s", tuple->value->cstring);
+    printf("Payee = %s\n", bills[i].payee);
+    
+    // payment amount
+    tuple = dict_find(iterator, startingPoint + 1);
+    bills[i].amount = (int) tuple->value->int32;
+    snprintf(bills[i].amt,sizeof(bills[i].amt),"%s%d","$",bills[i].amount);
+    printf("Amount = %d\n", bills[i].amount);
 
-    int key = t->key;
-    int keyIndexed = key - 2;
+    // month
+    tuple = dict_find(iterator, startingPoint + 2);
+    bills[i].month = (int) tuple->value->int32;
+    snprintf(bills[i].mnth,sizeof(bills[i].mnth),"%02d",bills[i].month);
+    printf("Month = %d\n", bills[i].month);
     
-    // is part of a bill
-    if (keyIndexed >= 0) {
-      int billNumber = (int) (keyIndexed / 5);  
-      printf("Bill Number = %d, key = %d", billNumber, key);
-      
-      keyIndexed %= 5;
-      switch(keyIndexed) {
-        // payee
-        case 0:
-          snprintf(bills[billNumber].payee, sizeof(bills[billNumber].payee), "%s", t->value->cstring);
-          printf("Payee = %s\n", bills[billNumber].payee);
-          break;
-        
-        // payment amount
-        case 1:
-          bills[billNumber].amount = (int)t->value->int32;
-          printf("Amount = %d\n", bills[billNumber].amount);
-          snprintf(bills[billNumber].amt,sizeof(bills[billNumber].amt),"%s%d","$",bills[billNumber].amount);
-          break;
-        
-        // month
-        case 2:
-          bills[billNumber].month = (int)t->value->int32;
-          printf("Month = %d\n", bills[billNumber].month);
-          snprintf(bills[billNumber].mnth,sizeof(bills[billNumber].mnth),"%02d",bills[billNumber].month);
-          break;
-        
-        // day
-        case 3:
-          bills[billNumber].day = (int)t->value->int32;
-          printf("Day = %d\n", bills[billNumber].day);
-          snprintf(bills[billNumber].dy,sizeof(bills[billNumber].dy),"%02d",bills[billNumber].day);
-          break;
-        
-        // year
-        case 4:
-          bills[billNumber].year = (int)t->value->int32;
-          printf("Year = %d\n", bills[billNumber].year);
-          snprintf(bills[billNumber].yr,sizeof(bills[billNumber].yr),"%02d",bills[billNumber].year);
-          break;
-        
-      }
-      snprintf(bills[billNumber].title, sizeof(bills[billNumber].title), "%s%s%s", bills[billNumber].amt, "     ", bills[billNumber].payee);
-      snprintf(bills[billNumber].fulldate, sizeof(bills[billNumber].fulldate), "%s%s%s%s%s", bills[billNumber].mnth, "/", bills[billNumber].dy, "/", bills[billNumber].yr);
-    } 
+    // day
+    tuple = dict_find(iterator, startingPoint + 3);
+    bills[i].day = (int) tuple->value->int32;
+    snprintf(bills[i].dy,sizeof(bills[i].dy),"%02d",bills[i].day);
+    printf("Day = %d\n", bills[i].day);
     
-    // is either balance or bill count
-    else {
-      switch(t->key) {
-        case BALANCE:
-          snprintf(balance_buffer, sizeof(balance_buffer), "%d", (int)t->value->int32);
-          printf("Current Balance %s\n", balance_buffer);
-          accounts_grab = t->value->int32;
-          break;      
-        case BILL_COUNT:
-          snprintf(billing_length_buffer, sizeof(billing_length_buffer), "%d", (int)t->value->int32);
-          printf("Number of bills %s\n", billing_length_buffer);
-          numBills = (int)t->value->int32;
-          bills = (Bill *) calloc(numBills, sizeof(Bill));
-          break;
-      }
-    }
-    
-    // Look for next item
-    t = dict_read_next(iterator);
+    // year 
+    tuple = dict_find(iterator, startingPoint + 4);
+    bills[i].year = (int) tuple->value->int32;
+    snprintf(bills[i].yr,sizeof(bills[i].yr),"%02d",bills[i].year);
+    printf("Year = %d\n", bills[i].year);
+
+    // title including amount paid, payee
+    snprintf(bills[i].title, sizeof(bills[i].title), "%s%s%s", bills[i].amt, "     ", bills[i].payee);
+    // subtitle including clean date
+    snprintf(bills[i].fulldate, sizeof(bills[i].fulldate), "%s%s%s%s%s", bills[i].mnth, "/", bills[i].dy, "/", bills[i].yr);
   }
 }
   
