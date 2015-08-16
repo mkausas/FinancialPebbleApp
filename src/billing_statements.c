@@ -18,16 +18,40 @@ static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t secti
     return getNumBills();
 }
 
-static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "enter draw row");
-
-    int row = cell_index->row;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "crash");
-
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "gettitle:%s, getdate:%s", getBills(row).title, getBills(row).fulldate);
-
-    menu_cell_basic_draw(ctx, cell_layer, getBills(row).title, getBills(row).fulldate, NULL);
+static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
+  // Draw title text in the section header
+  menu_cell_basic_header_draw(ctx, cell_layer, "Billing Statements");
 }
+// static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
+//     APP_LOG(APP_LOG_LEVEL_DEBUG, "enter draw row");
+
+//     int row = cell_index->row;
+//     APP_LOG(APP_LOG_LEVEL_DEBUG, "crash");
+
+//     APP_LOG(APP_LOG_LEVEL_DEBUG, "gettitle:%s, getdate:%s", getBills(row).title, getBills(row).fulldate);
+
+//     menu_cell_basic_draw(ctx, cell_layer, getBills(row).title, getBills(row).fulldate, NULL);
+// }
+
+static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
+  // Determine which section we're going to draw in
+  switch (cell_index->section) {
+    case 0:
+      // Use the row to specify which item we'll draw
+      switch (cell_index->row) {
+        case 0:
+          // This is a basic menu item with a title and subtitle
+          menu_cell_basic_draw(ctx, cell_layer, "Basic Item", "With a subtitle", NULL);
+          break;
+        case 1:
+          // This is a basic menu icon with a cycling icon
+          menu_cell_basic_draw(ctx, cell_layer, "Icon Item", "Select to cycle", NULL);
+          break;
+      }
+      break;
+  }
+}
+
 
 static void menu_select_click(MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "clicked!");
@@ -46,8 +70,9 @@ static void main_window_load(Window *window) {
   s_menu_layer = menu_layer_create(bounds);
   menu_layer_set_callbacks(s_menu_layer, NULL, (MenuLayerCallbacks){
     .get_num_rows = menu_get_num_rows_callback,
+    .draw_header = menu_draw_header_callback,
     .draw_row = menu_draw_row_callback,
-    .select_click = menu_select_click
+    .select_click = menu_select_click,
   });
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "after enter draw row");
