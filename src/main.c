@@ -21,19 +21,19 @@ Layer *bars_layer;
 Layer *main_layer;
 Layer *window_layer;
 
-static double spent_so_far = 50.00;
+static double spent_so_far = 0;
 static int accounts_grab = 0;
-static double set_limit = 60; //TODO: set by settings  
+static int set_limit = 0; //TODO: set by settings  
 static AppTimer *s_timer;
 static bool checkColor = true;
 
-int start_month;
-int start_day;
-int start_year;
-int end_month;
-int end_day;
-int end_year;
-int budget;
+static int start_month = 0;
+static int start_day = 0;
+static int start_year = 0;
+static int end_month = 0;
+static int end_day = 0;
+static int end_year = 0;
+//int budget;
 
 
 //change to new window
@@ -155,7 +155,7 @@ void bars_update_callback(Layer *me, GContext* ctx) {
   percentageLeft = ((double)134*percentageLeft); //Percent of bar based on % of balance
   bar_percent = (int)percentageLeft;
   //fills the amount of progress for bar
-  graphics_context_set_fill_color(ctx, GColorWhite);
+  graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_rect(ctx, GRect(5, 148, bar_percent, 5), 0, GCornerNone);
   
 }
@@ -438,8 +438,8 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   
     // end_month
     tuple = dict_find(iterator, 1006);
-    budget = (int) tuple->value->int32; 
-    printf("budget tuple value = %d", budget);
+    set_limit = (int) tuple->value->int32; 
+    printf("budget tuple value = %d", set_limit);
   }
   
   

@@ -83,7 +83,8 @@ static void main_window_load(Window *window) {
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "after menu layer set click config onto window");
-  
+     menu_layer_set_highlight_colors(s_menu_layer, GColorPictonBlue, GColorWhite);
+  menu_layer_set_normal_colors(s_menu_layer, GColorWhite, GColorBlack);
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
   
   APP_LOG(APP_LOG_LEVEL_DEBUG, "after menu layer get layer");
