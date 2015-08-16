@@ -1,3 +1,11 @@
+Pebble.addEventListener('showConfiguration', function(e) {
+  // Show config page
+  Pebble.openURL('http://0cdc8d30.ngrok.io');
+});
+
+Pebble.addEventListener('webviewclosed', function(e) {
+  console.log('Configuration window returned: ' + e.response);
+});
 
 function getInfo(type) {
   // create http request

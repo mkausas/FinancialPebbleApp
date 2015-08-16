@@ -4,7 +4,7 @@
         "BILL_COUNT": 1
     },
     "capabilities": [
-        ""
+        "configurable"
     ],
     "companyName": "mkausas@gmail.com",
     "longName": "Financial Watch App",
