@@ -10,6 +10,9 @@
   
 Window* window;
 
+static Bill *bills;
+static int numBills = 0;
+
 TextLayer *day_layer;
 TextLayer *current_balance_text;
 TextLayer *total_balance_text;
@@ -21,18 +24,19 @@ Layer *bars_layer;
 Layer *main_layer;
 Layer *window_layer;
 
-static double spent_so_far = 0;
+static int spending_left = 0;
+static int how_much_spent = 0; //Find out how much was spent to calc spending_left
 static int accounts_grab = 0;
-static int set_limit = 0; //TODO: set by settings  
+static int budget = 100;
 static AppTimer *s_timer;
 static bool checkColor = true;
 
-static int start_month = 0;
-static int start_day = 0;
-static int start_year = 0;
-static int end_month = 0;
-static int end_day = 0;
-static int end_year = 0;
+static int start_month = 8;
+static int start_day = 16;
+static int start_year = 2015;
+static int end_month = 8;
+static int end_day = 23;
+static int end_year = 2015;
 //int budget;
 
 
@@ -66,7 +70,7 @@ char *secToMinHrDay(int seconds){
 }
 
 //takes a date and returns the seconds in it since 1970
-int dateTimeToSec(int year, int month, int day, int hour, int min, int sec){
+int dateTimeToSec(int year, int month, int day, int hour){
   int total_seconds = 0;
   if(month==1||month==3||month==5||month==7||month==8||month==10||month==12){
     total_seconds += 31*SECONDS_IN_DAY;
@@ -79,48 +83,43 @@ int dateTimeToSec(int year, int month, int day, int hour, int min, int sec){
   total_seconds += (year-1970)*365*SECONDS_IN_DAY;
   total_seconds += day*SECONDS_IN_DAY;
   total_seconds += hour*SECONDS_IN_HOUR;
-  total_seconds += min*SECONDS_IN_MIN;
-  total_seconds += sec;
   return total_seconds;
 }
 
 
-void draw_text(){
+void setHowMuchSpent(){
+  //Called when settings are updated
+  for(int i=0; i < numBills; i++){
+    how_much_spent += bills[i].amount;
+  }
+  
+  //free(timeFormatted);  //may need to
+}
 
+
+void draw_text(){
+  spending_left = budget - how_much_spent;
+  APP_LOG(APP_LOG_LEVEL_INFO, "how_much_spent %d", how_much_spent);
+  APP_LOG(APP_LOG_LEVEL_INFO, "spending_left %d", spending_left);
+  APP_LOG(APP_LOG_LEVEL_INFO, "budget %d", budget);
   int totalBalance = accounts_grab*100;
-  int spentBalance = spent_so_far*100;
+  int spentBalance = spending_left*100;
   
-//--------Making time til budget ends work---------------
-  //Year, month, day, hour, min, sec of time started
-  int start_year = 2015;
-  int start_month = 8;
-  int start_day = 14;
-  int start_hour = 17; //hour in 24hr
-  int start_min = 0;
-  int start_sec = 0; 
+    int start_total_seconds = dateTimeToSec(start_year, start_month, start_day, 0);
+  int end_total_seconds = dateTimeToSec(end_year, end_month, end_day, 23);
   
-  //Year, month, day, hour, min, sec of time started
-  int end_year = 2015;
-  int end_month = 8;
-  int end_day = 17;
-  int end_hour = 8; //hour in 24hr
-  int end_min = 30;
-  int end_sec = 0; 
-  
-  int start_total_seconds = dateTimeToSec(start_year, start_month, start_day, start_hour, start_min, start_sec);
-  int end_total_seconds = dateTimeToSec(end_year, end_month, end_day, end_hour, end_min, end_sec);
   
   char *timeFormatted = secToMinHrDay(end_total_seconds-start_total_seconds);
   text_layer_set_text(text_time_layer, timeFormatted); 
   APP_LOG(APP_LOG_LEVEL_INFO, "timeFormatted: %s", timeFormatted);
-  //free(timeFormatted);  //may need to
+  
   //Manual limit
-    int budget_left = set_limit*100 - spentBalance;
+    int budget_left = how_much_spent*100;
   
   static char b_dollar[20];
-  snprintf(b_dollar,sizeof(b_dollar),"%d",budget_left/100);
+  snprintf(b_dollar,sizeof(b_dollar),"%d",spentBalance/100);
   static char b_cent[10];
-  snprintf(b_cent, sizeof(b_cent),"%02d",budget_left%100);
+  snprintf(b_cent, sizeof(b_cent),"%02d",spentBalance%100);
   static char budget_balance[20];
   snprintf(budget_balance, sizeof(budget_balance), "%s%s%s%s", "$", b_dollar, ".", b_cent);
   text_layer_set_text(current_balance_text, budget_balance);
@@ -150,14 +149,16 @@ void bars_update_callback(Layer *me, GContext* ctx) {
   graphics_draw_line(ctx, GPoint(144-6, 148), GPoint(144-6, 148+4)); //long line, top
   
   int bar_percent; 
+  
   //sets percentage for progress bar
-  double percentageLeft = ((double)spent_so_far/set_limit); 
+  double percentageLeft = ((double)how_much_spent/budget); 
   percentageLeft = ((double)134*percentageLeft); //Percent of bar based on % of balance
   bar_percent = (int)percentageLeft;
   //fills the amount of progress for bar
+  if(spending_left>=0){
   graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_rect(ctx, GRect(5, 148, bar_percent, 5), 0, GCornerNone);
-  
+  }
 }
 
 
@@ -169,6 +170,7 @@ void initialize_text_layers(){
   text_layer_set_background_color(current_balance_text, GColorClear);
   text_layer_set_font(current_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   layer_add_child(window_layer, text_layer_get_layer(current_balance_text));
+  text_layer_set_text(current_balance_text, "Loading $...");
   
   //total account balance text
   total_balance_text = text_layer_create(GRect(8,95,144,95+22));  
@@ -176,7 +178,8 @@ void initialize_text_layers(){
   text_layer_set_background_color(total_balance_text,GColorClear);
   text_layer_set_font(total_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   layer_add_child(window_layer,text_layer_get_layer(total_balance_text));
-
+  text_layer_set_text(total_balance_text, "Loading balance...");
+  
   //Clock text
   text_time_layer = text_layer_create(GRect(8, 60, 144, 60+20));  
   text_layer_set_text_color(text_time_layer, GColorBlack);
@@ -184,6 +187,7 @@ void initialize_text_layers(){
   text_layer_set_font(text_time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   text_layer_set_text(text_time_layer, "00:00");
   layer_add_child(window_layer, text_layer_get_layer(text_time_layer));
+  text_layer_set_text(text_time_layer, "Loading time...");
 }
 
 void progress_update_callback(Layer *me, GContext* ctx) {
@@ -199,67 +203,41 @@ void progress_update_callback(Layer *me, GContext* ctx) {
 }
 
 
-//Could recomment
-// void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
-
-//   static char time_text[] = "00:00";
-//   char *time_format;
-
-//   //Time
-//   if (clock_is_24h_style()) {
-//     time_format = "%R";
-//   } else {
-//     time_format = "%I:%M";
-//   }
-
- 
-//   strftime(time_text, sizeof(time_text), time_format, tick_time);
-
-//   if (!clock_is_24h_style() && (time_text[0] == '0')) {
-//     memmove(time_text, &time_text[1], sizeof(time_text) - 1);
-//   }
-
-//   //text_layer_set_text(text_time_layer, time_text);
-
-  
-//   //Redraw layer
-//   layer_mark_dirty(main_layer);
-// }
-
 GColor getRightColor(){
-  int to_switch_by = (spent_so_far*100)/(set_limit*100);
-  switch(to_switch_by%10){
-    case 0:
+  double to_switch_by = ((double)spending_left*100)/(budget*100);
+  APP_LOG(APP_LOG_LEVEL_INFO, "toswitchby/10 %d", (int)(to_switch_by*100/10));
+  switch((int)(to_switch_by*100)/10){
+    case 10:
       return GColorGreen;
       break;
-    case 1:
+    case 9:
       return GColorGreen;
       break;
-    case 2:
+    case 8:
       return GColorBrightGreen;
       break;
-    case 3:
+    case 7:
       return GColorSpringBud;
       break;
-    case 4:
+    case 6:
       return GColorIcterine;
       break;
     case 5:
       return GColorPastelYellow;
       break;
-    case 6:
+    case 4:
       return GColorYellow;
       break;
-    case 7:
+    case 3:
       return GColorRajah;
       break;
-    case 8:
+    case 2:
       return GColorChromeYellow;
       break;
-    case 9:
+    case 1:
       return GColorOrange;
       break;
-    case 10:
+    case 0:
       return GColorRed;
       break;
   }
@@ -321,11 +299,11 @@ static void handle_destroy(void) {
 
  
 
-static Bill *bills;
+
 Bill getBills(int index) {
   return bills[index];
 }
-int numBills = 0;
+
 int getNumBills(void) {
   return numBills;
 }
@@ -438,11 +416,11 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   
     // end_month
     tuple = dict_find(iterator, 1006);
-    set_limit = (int) tuple->value->int32; 
-    printf("budget tuple value = %d", set_limit);
+    budget = (int) tuple->value->int32; 
+    printf("budget tuple value = %d", budget);
   }
   
-  
+  setHowMuchSpent();
   layer_mark_dirty(main_layer);
 }
   
