@@ -3,7 +3,11 @@
 
 #define BALANCE 0
 #define BILL_COUNT 1
-
+#define SECONDS_IN_DAY 86400
+#define SECONDS_IN_HOUR 3600
+#define SECONDS_IN_MIN 60
+#define SECONDS_IN_YEAR 31536000
+  
 Window* window;
 
 TextLayer *day_layer;
@@ -32,13 +36,54 @@ void click_config_provider(void *context) {
 
 static int accounts_grab =0; //the amount in the account currently
 
+//Spits out string with hours and days according
+char *secToMinHrDay(int seconds){
+  APP_LOG(APP_LOG_LEVEL_INFO, "secToMinHrDay");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Calc seconds: %d", seconds);
+  int days = seconds/SECONDS_IN_DAY;
+  int temp1 = seconds%SECONDS_IN_DAY;
+  
+  int hours = temp1/SECONDS_IN_HOUR;
+  int temp2 = temp1%SECONDS_IN_HOUR;
+  
+  int mins = temp2/SECONDS_IN_MIN;
+  //seconds = temp2%SECONDS_IN_MIN;
+  
+  char* toRet = (char *) malloc(30*sizeof(char*));
+  snprintf(toRet, 30, "%d days, %d hrs", days, hours);
+    APP_LOG(APP_LOG_LEVEL_INFO, "secToMinHrDay toRet = %s", toRet);
+  return toRet;
+}
+
+//takes a date and returns the seconds in it since 1970
+int dateTimeToSec(int year, int month, int day, int hour, int min, int sec){
+  int total_seconds = 0;
+  if(month==1||month==3||month==5||month==7||month==8||month==10||month==12){
+    total_seconds += 31*SECONDS_IN_DAY;
+  }else if(month==2){
+    total_seconds += 28*SECONDS_IN_DAY;
+  }else{
+    total_seconds += 30*SECONDS_IN_DAY;
+  }
+  
+  total_seconds += (year-1970)*365*SECONDS_IN_DAY;
+  total_seconds += day*SECONDS_IN_DAY;
+  total_seconds += hour*SECONDS_IN_HOUR;
+  total_seconds += min*SECONDS_IN_MIN;
+  total_seconds += sec;
+  return total_seconds;
+}
+
+
 void draw_text(){
 
   int totalBalance = accounts_grab*100;
   int spentBalance = capital_one_grab*100;
   
-
-  //TODO: Add something that waits for js to update
+  char *timeFormatted = secToMinHrDay(timeDiff);
+  text_layer_set_text(text_time_layer, timeFormatted); 
+  APP_LOG(APP_LOG_LEVEL_INFO, "timeFormatted: %s", timeFormatted);
+  //free(timeFormatted);
   
   //Manual limit
     int budget_left = set_limit*100 - spentBalance;
@@ -146,7 +191,7 @@ void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
     memmove(time_text, &time_text[1], sizeof(time_text) - 1);
   }
 
-  text_layer_set_text(text_time_layer, time_text);
+  //text_layer_set_text(text_time_layer, time_text);
 
   
   //Redraw layer
