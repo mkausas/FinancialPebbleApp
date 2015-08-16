@@ -6,7 +6,6 @@
 
 Window* window;
 
-
 TextLayer *day_layer;
 TextLayer *current_balance_text;
 TextLayer *total_balance_text;
@@ -17,6 +16,9 @@ TextLayer *text_time_layer;
 Layer *bars_layer;
 Layer *main_layer;
 Layer *window_layer;
+
+static double capital_one_grab = 50.00;
+static double set_limit = 60; //TODO: set by settings  
 
 //change to new window
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -29,7 +31,38 @@ void click_config_provider(void *context) {
 }
 
 static int accounts_grab =0; //the amount in the account currently
-bool js_updated = false;  
+
+void draw_text(){
+
+  int totalBalance = accounts_grab*100;
+  int spentBalance = capital_one_grab*100;
+  
+
+  //TODO: Add something that waits for js to update
+  
+  //Manual limit
+    int budget_left = set_limit*100 - spentBalance;
+  
+  static char b_dollar[20];
+  snprintf(b_dollar,sizeof(b_dollar),"%d",budget_left/100);
+  static char b_cent[10];
+  snprintf(b_cent, sizeof(b_cent),"%02d",budget_left%100);
+  static char budget_balance[20];
+  snprintf(budget_balance, sizeof(budget_balance), "%s%s%s%s", "Total: $", b_dollar, ".", b_cent);
+  text_layer_set_text(current_balance_text, budget_balance);
+  
+  //turns how much total left into currency form
+  static char t_dollar[20];
+  snprintf(t_dollar,sizeof(t_dollar),"%d",totalBalance/100);
+  static char t_cent[10];
+  snprintf(t_cent, sizeof(t_cent),"%02d",totalBalance%100);
+  static char total_balance[20];
+  snprintf(total_balance, sizeof(total_balance), "%s%s%s%s", "Balance: $", t_dollar, ".", t_cent);
+  text_layer_set_text(total_balance_text, total_balance);
+  
+  }
+
+
 
 void bars_update_callback(Layer *me, GContext* ctx) {
   (void)me;
@@ -42,65 +75,7 @@ void bars_update_callback(Layer *me, GContext* ctx) {
   graphics_draw_line(ctx, GPoint(4, 148),     GPoint(4, 148+4)); //short line, left
   graphics_draw_line(ctx, GPoint(144-6, 148), GPoint(144-6, 148+4)); //long line, top
   
-}
-
-
-
-void progress_update_callback(Layer *me, GContext* ctx) {
-  (void)me;
-  time_t now = time(NULL);
-  tn = localtime(&now);
-  graphics_context_set_stroke_color(ctx, GColorWhite);
-  
-  
-
-  //Calculate the percentage of alotted funds based on current spending amount
-  double capital_one_grab = 50.00;
-  int totalBalance = accounts_grab*100;
-  int spentBalance = capital_one_grab*100;
   int bar_percent; 
-  
-  //TODO: Add something that waits for js to update
-  
-  //Manual limit
-  double set_limit = 60; //TODO: set by settings  
-  int budget_left = set_limit*100 - spentBalance;
-  
-  
-   if(js_updated){
-    //turns how much total left into currency form
-    static char t_dollar[20];
-    snprintf(t_dollar,sizeof(t_dollar),"%d",totalBalance/100);
-    static char t_cent[10];
-    snprintf(t_cent, sizeof(t_cent),"%02d",totalBalance%100);
-    static char total_balance[20];
-    snprintf(total_balance, sizeof(total_balance), "%s%s%s%s", "Balance: $", t_dollar, ".", t_cent);
-    text_layer_set_text(total_balance_text, total_balance);
-  }else{
-    //TODO maybe make a smaller font for this part
-    text_layer_set_text(total_balance_text, "Loading balance...");
-  }
-  
-  static char b_dollar[20];
-  snprintf(b_dollar,sizeof(b_dollar),"%d",budget_left/100);
-  static char b_cent[10];
-  snprintf(b_cent, sizeof(b_cent),"%02d",budget_left%100);
-  static char budget_balance[20];
-  snprintf(budget_balance, sizeof(budget_balance), "%s%s%s%s", "Total: $", b_dollar, ".", b_cent);
-  text_layer_set_text(current_balance_text, budget_balance);
-  
-  
-  //turns how much total left into currency form
-  static char t_dollar[20];
-  snprintf(t_dollar,sizeof(t_dollar),"%d",totalBalance/100);
-  static char t_cent[10];
-  snprintf(t_cent, sizeof(t_cent),"%02d",totalBalance%100);
-  static char total_balance[20];
-  snprintf(total_balance, sizeof(total_balance), "%s%s%s%s", "Total: $", t_dollar, ".", t_cent);
-  text_layer_set_text(total_balance_text, total_balance);
-  
-  
-  
   //sets percentage for progress bar
   double percentageLeft = ((double)capital_one_grab/set_limit); 
   percentageLeft = ((double)134*percentageLeft); //Percent of bar based on % of balance
@@ -108,7 +83,46 @@ void progress_update_callback(Layer *me, GContext* ctx) {
   //fills the amount of progress for bar
   graphics_context_set_fill_color(ctx, GColorWhite);
   graphics_fill_rect(ctx, GRect(5, 148, bar_percent, 5), 0, GCornerNone);
+  
+}
 
+
+
+void initialize_text_layers(){
+  //Current Account Balance text
+  current_balance_text = text_layer_create(GRect(8, 20, 144-16, 20+28)); //GRect(8, 49, 144-16, 49+28));   
+  text_layer_set_text_color(current_balance_text, GColorWhite);
+  text_layer_set_background_color(current_balance_text, GColorClear);
+  text_layer_set_font(current_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
+  layer_add_child(window_layer, text_layer_get_layer(current_balance_text));
+  
+  //total account balance text
+  total_balance_text = text_layer_create(GRect(8,95,144,95+22));  
+  text_layer_set_text_color(total_balance_text,GColorWhite);
+  text_layer_set_background_color(total_balance_text,GColorClear);
+  text_layer_set_font(total_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  layer_add_child(window_layer,text_layer_get_layer(total_balance_text));
+
+  //Clock text
+  text_time_layer = text_layer_create(GRect(8, 60, 144, 60+20));  
+  text_layer_set_text_color(text_time_layer, GColorWhite);
+  text_layer_set_background_color(text_time_layer, GColorClear);
+  text_layer_set_font(text_time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+  text_layer_set_text(text_time_layer, "00:00");
+  layer_add_child(window_layer, text_layer_get_layer(text_time_layer));
+}
+
+void progress_update_callback(Layer *me, GContext* ctx) {
+  (void)me;
+  time_t now = time(NULL);
+  tn = localtime(&now);
+  graphics_context_set_stroke_color(ctx, GColorWhite);
+  
+  draw_text();
+  
+  
+  //Calculate the percentage of alotted funds based on current spending amount
+  
 }
 
 
@@ -148,30 +162,7 @@ static void handle_init(void) {
 
   window_layer = window_get_root_layer(window);
   
-  //Current Account Balance text
-  current_balance_text = text_layer_create(GRect(8, 20, 144-16, 20+28)); //GRect(8, 49, 144-16, 49+28));   
-  text_layer_set_text_color(current_balance_text, GColorWhite);
-  text_layer_set_background_color(current_balance_text, GColorClear);
-  text_layer_set_font(current_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
-  layer_add_child(window_layer, text_layer_get_layer(current_balance_text));
-  
-  //total account balance text
-  total_balance_text = text_layer_create(GRect(8,95,144,95+22));  
-  text_layer_set_text_color(total_balance_text,GColorWhite);
-  text_layer_set_background_color(total_balance_text,GColorClear);
-  text_layer_set_font(total_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_18));
-  layer_add_child(window_layer,text_layer_get_layer(total_balance_text));
-
-
-  //Clock text
-  text_time_layer = text_layer_create(GRect(8, 60, 144, 60+20));  
-  text_layer_set_text_color(text_time_layer, GColorWhite);
-  text_layer_set_background_color(text_time_layer, GColorClear);
-  text_layer_set_font(text_time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-  
-  text_layer_set_text(text_time_layer, "00:00");
-  layer_add_child(window_layer, text_layer_get_layer(text_time_layer));
-
+  initialize_text_layers();
 
   bars_layer = layer_create(layer_get_frame(window_layer));
   layer_set_update_proc(bars_layer, bars_update_callback);
