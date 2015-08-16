@@ -28,7 +28,7 @@ void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
 }
 
-static double accounts_grab =0; //the amount in the account currently
+static int accounts_grab =0; //the amount in the account currently
 bool js_updated = false;  
 
 void bars_update_callback(Layer *me, GContext* ctx) {
