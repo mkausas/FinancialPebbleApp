@@ -1,4 +1,5 @@
 #include <pebble.h>
+#include "billing_statements.h"
 
 #define BALANCE 0
 #define BILL_COUNT 1
@@ -16,6 +17,16 @@ TextLayer *text_time_layer;
 Layer *bars_layer;
 Layer *main_layer;
 Layer *window_layer;
+
+//change to new window
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  billing_start();
+}
+
+void click_config_provider(void *context) {
+  // Register the ClickHandlers
+  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+}
 
 static double accounts_grab =0; //the amount in the account currently
 bool js_updated = false;  
@@ -69,6 +80,15 @@ void progress_update_callback(Layer *me, GContext* ctx) {
     //TODO maybe make a smaller font for this part
     text_layer_set_text(total_balance_text, "Loading balance...");
   }
+  
+  static char b_dollar[20];
+  snprintf(b_dollar,sizeof(b_dollar),"%d",budget_left/100);
+  static char b_cent[10];
+  snprintf(b_cent, sizeof(b_cent),"%02d",budget_left%100);
+  static char budget_balance[20];
+  snprintf(budget_balance, sizeof(budget_balance), "%s%s%s%s", "Total: $", b_dollar, ".", b_cent);
+  text_layer_set_text(current_balance_text, budget_balance);
+  
   
   //turns how much total left into currency form
   static char t_dollar[20];
@@ -162,6 +182,8 @@ static void handle_init(void) {
   layer_add_child(window_layer, main_layer);
   
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
+  
+  window_set_click_config_provider(window, click_config_provider);
 }
 
 
@@ -184,16 +206,16 @@ static void handle_destroy(void) {
 }
 
 
- typedef struct {
-  char payee[32];
-  int amount;
-  int month;
-  int day;
-  int year;
-} Bill;
+ 
 
-Bill *bills;
+static Bill *bills;
+Bill getBills(int index) {
+  return bills[index];
+}
 int numBills = 0;
+int getNumBills(void) {
+  return numBills;
+}
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   static char balance_buffer[8];
@@ -229,27 +251,33 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         case 1:
           bills[billNumber].amount = (int)t->value->int32;
           printf("Amount = %d\n", bills[billNumber].amount);
+          snprintf(bills[billNumber].amt,sizeof(bills[billNumber].amt),"%s%d","$",bills[billNumber].amount);
           break;
         
         // month
         case 2:
           bills[billNumber].month = (int)t->value->int32;
           printf("Month = %d\n", bills[billNumber].month);
+          snprintf(bills[billNumber].mnth,sizeof(bills[billNumber].mnth),"%02d",bills[billNumber].month);
           break;
         
         // day
         case 3:
           bills[billNumber].day = (int)t->value->int32;
           printf("Day = %d\n", bills[billNumber].day);
+          snprintf(bills[billNumber].dy,sizeof(bills[billNumber].dy),"%02d",bills[billNumber].day);
           break;
         
         // year
         case 4:
           bills[billNumber].year = (int)t->value->int32;
           printf("Year = %d\n", bills[billNumber].year);
+          snprintf(bills[billNumber].yr,sizeof(bills[billNumber].yr),"%02d",bills[billNumber].year);
           break;
         
       }
+      snprintf(bills[billNumber].title, sizeof(bills[billNumber].title), "%s%s%s", bills[billNumber].amt, "     ", bills[billNumber].payee);
+      snprintf(bills[billNumber].fulldate, sizeof(bills[billNumber].fulldate), "%s%s%s%s%s", bills[billNumber].mnth, "/", bills[billNumber].dy, "/", bills[billNumber].yr);
     } 
     
     // is either balance or bill count
@@ -271,7 +299,8 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     
     // Look for next item
     t = dict_read_next(iterator);
-  }}
+  }
+}
   
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
@@ -284,6 +313,9 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
+
+
+
 
 int main(void) {
    handle_init();
