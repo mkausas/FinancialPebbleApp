@@ -21,8 +21,11 @@ Layer *bars_layer;
 Layer *main_layer;
 Layer *window_layer;
 
-static double capital_one_grab = 50.00;
+static double spent_so_far = 50.00;
+static int accounts_grab = 0;
 static double set_limit = 60; //TODO: set by settings  
+static AppTimer *s_timer;
+static bool checkColor = true;
 
 //change to new window
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -33,8 +36,6 @@ void click_config_provider(void *context) {
   // Register the ClickHandlers
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
 }
-
-static int accounts_grab =0; //the amount in the account currently
 
 //Spits out string with hours and days according
 char *secToMinHrDay(int seconds){
@@ -78,13 +79,32 @@ int dateTimeToSec(int year, int month, int day, int hour, int min, int sec){
 void draw_text(){
 
   int totalBalance = accounts_grab*100;
-  int spentBalance = capital_one_grab*100;
+  int spentBalance = spent_so_far*100;
   
-//   char *timeFormatted = secToMinHrDay(timeDiff);
-//   text_layer_set_text(text_time_layer, timeFormatted); 
-//   APP_LOG(APP_LOG_LEVEL_INFO, "timeFormatted: %s", timeFormatted);
-  //free(timeFormatted);
+//--------Making time til budget ends work---------------
+  //Year, month, day, hour, min, sec of time started
+  int start_year = 2015;
+  int start_month = 8;
+  int start_day = 14;
+  int start_hour = 17; //hour in 24hr
+  int start_min = 0;
+  int start_sec = 0; 
   
+  //Year, month, day, hour, min, sec of time started
+  int end_year = 2015;
+  int end_month = 8;
+  int end_day = 17;
+  int end_hour = 8; //hour in 24hr
+  int end_min = 30;
+  int end_sec = 0; 
+  
+  int start_total_seconds = dateTimeToSec(start_year, start_month, start_day, start_hour, start_min, start_sec);
+  int end_total_seconds = dateTimeToSec(end_year, end_month, end_day, end_hour, end_min, end_sec);
+  
+  char *timeFormatted = secToMinHrDay(end_total_seconds-start_total_seconds);
+  text_layer_set_text(text_time_layer, timeFormatted); 
+  APP_LOG(APP_LOG_LEVEL_INFO, "timeFormatted: %s", timeFormatted);
+  //free(timeFormatted);  //may need to
   //Manual limit
     int budget_left = set_limit*100 - spentBalance;
   
@@ -112,7 +132,7 @@ void draw_text(){
 void bars_update_callback(Layer *me, GContext* ctx) {
   (void)me;
 
-  graphics_context_set_stroke_color(ctx, GColorWhite);
+  graphics_context_set_stroke_color(ctx, GColorBlack);
   
   //Progress Bar
   graphics_draw_line(ctx, GPoint(5, 147),     GPoint(144-7, 147));  //long line, bottom
@@ -122,7 +142,7 @@ void bars_update_callback(Layer *me, GContext* ctx) {
   
   int bar_percent; 
   //sets percentage for progress bar
-  double percentageLeft = ((double)capital_one_grab/set_limit); 
+  double percentageLeft = ((double)spent_so_far/set_limit); 
   percentageLeft = ((double)134*percentageLeft); //Percent of bar based on % of balance
   bar_percent = (int)percentageLeft;
   //fills the amount of progress for bar
@@ -136,21 +156,21 @@ void bars_update_callback(Layer *me, GContext* ctx) {
 void initialize_text_layers(){
   //Current Account Balance text
   current_balance_text = text_layer_create(GRect(8, 20, 144-16, 20+28)); //GRect(8, 49, 144-16, 49+28));   
-  text_layer_set_text_color(current_balance_text, GColorWhite);
+  text_layer_set_text_color(current_balance_text, GColorBlack);
   text_layer_set_background_color(current_balance_text, GColorClear);
   text_layer_set_font(current_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   layer_add_child(window_layer, text_layer_get_layer(current_balance_text));
   
   //total account balance text
   total_balance_text = text_layer_create(GRect(8,95,144,95+22));  
-  text_layer_set_text_color(total_balance_text,GColorWhite);
+  text_layer_set_text_color(total_balance_text,GColorBlack);
   text_layer_set_background_color(total_balance_text,GColorClear);
   text_layer_set_font(total_balance_text, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   layer_add_child(window_layer,text_layer_get_layer(total_balance_text));
 
   //Clock text
   text_time_layer = text_layer_create(GRect(8, 60, 144, 60+20));  
-  text_layer_set_text_color(text_time_layer, GColorWhite);
+  text_layer_set_text_color(text_time_layer, GColorBlack);
   text_layer_set_background_color(text_time_layer, GColorClear);
   text_layer_set_font(text_time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   text_layer_set_text(text_time_layer, "00:00");
@@ -165,39 +185,87 @@ void progress_update_callback(Layer *me, GContext* ctx) {
   
   draw_text();
   
-  
   //Calculate the percentage of alotted funds based on current spending amount
   
 }
 
 
+//Could recomment
+// void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
 
-void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
+//   static char time_text[] = "00:00";
+//   char *time_format;
 
-  static char time_text[] = "00:00";
-  char *time_format;
-
-  //Time
-  if (clock_is_24h_style()) {
-    time_format = "%R";
-  } else {
-    time_format = "%I:%M";
-  }
+//   //Time
+//   if (clock_is_24h_style()) {
+//     time_format = "%R";
+//   } else {
+//     time_format = "%I:%M";
+//   }
 
  
-  strftime(time_text, sizeof(time_text), time_format, tick_time);
+//   strftime(time_text, sizeof(time_text), time_format, tick_time);
 
-  if (!clock_is_24h_style() && (time_text[0] == '0')) {
-    memmove(time_text, &time_text[1], sizeof(time_text) - 1);
-  }
+//   if (!clock_is_24h_style() && (time_text[0] == '0')) {
+//     memmove(time_text, &time_text[1], sizeof(time_text) - 1);
+//   }
 
-  //text_layer_set_text(text_time_layer, time_text);
+//   //text_layer_set_text(text_time_layer, time_text);
 
   
-  //Redraw layer
-  layer_mark_dirty(main_layer);
+//   //Redraw layer
+//   layer_mark_dirty(main_layer);
+// }
+
+GColor getRightColor(){
+  int to_switch_by = (spent_so_far*100)/(set_limit*100);
+  switch(to_switch_by%10){
+    case 0:
+      return GColorGreen;
+      break;
+    case 1:
+      return GColorGreen;
+      break;
+    case 2:
+      return GColorBrightGreen;
+      break;
+    case 3:
+      return GColorSpringBud;
+      break;
+    case 4:
+      return GColorIcterine;
+      break;
+    case 5:
+      return GColorPastelYellow;
+      break;
+    case 6:
+      return GColorYellow;
+      break;
+    case 7:
+      return GColorRajah;
+      break;
+    case 8:
+      return GColorChromeYellow;
+      break;
+    case 9:
+      return GColorOrange;
+      break;
+    case 10:
+      return GColorRed;
+      break;
+  }
+  return GColorWhite;
 }
 
+
+void timer_callback(void *context){
+  layer_mark_dirty(main_layer);
+  if(checkColor){
+    window_set_background_color(window, getRightColor());
+    checkColor = !checkColor;
+  }
+  s_timer = app_timer_register(4000, timer_callback, NULL);
+}
 
 static void handle_init(void) {
 
@@ -217,9 +285,9 @@ static void handle_init(void) {
   layer_set_update_proc(main_layer, progress_update_callback);
   layer_add_child(window_layer, main_layer);
   
-  tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
-  
+  //tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
   window_set_click_config_provider(window, click_config_provider);
+  s_timer = app_timer_register(4000, timer_callback, NULL);
 }
 
 
@@ -237,7 +305,7 @@ static void handle_destroy(void) {
   layer_destroy(main_layer);
   tick_timer_service_unsubscribe();
   layer_destroy(window_layer);
-  
+  app_timer_cancel(s_timer);
   window_destroy(window);
 }
 
@@ -317,6 +385,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     snprintf(bills[i].fulldate, sizeof(bills[i].fulldate), "%02d%02d%02d", bills[i].day, bills[i].month, bills[i].year); //"%s%s%s", bills[i].mnth, bills[i].dy, bills[i].yr);
     printf("date = %s\n", bills[i].fulldate);
   }
+  layer_mark_dirty(main_layer);
 }
   
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
