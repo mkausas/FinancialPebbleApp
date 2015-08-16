@@ -10,14 +10,7 @@
     "longName": "Financial Watch App",
     "projectType": "native",
     "resources": {
-        "media": [
-            {
-                "file": "images/pebblepouch.png",
-                "menuIcon": true,
-                "name": "pouch",
-                "type": "png"
-            }
-        ]
+        "media": []
     },
     "sdkVersion": "3",
     "shortName": "Financial Watch App",
