@@ -113,7 +113,7 @@ void draw_text(){
   static char b_cent[10];
   snprintf(b_cent, sizeof(b_cent),"%02d",budget_left%100);
   static char budget_balance[20];
-  snprintf(budget_balance, sizeof(budget_balance), "%s%s%s%s", "Total: $", b_dollar, ".", b_cent);
+  snprintf(budget_balance, sizeof(budget_balance), "%s%s%s%s", "$", b_dollar, ".", b_cent);
   text_layer_set_text(current_balance_text, budget_balance);
   
   //turns how much total left into currency form
