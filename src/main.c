@@ -80,9 +80,9 @@ void draw_text(){
   int totalBalance = accounts_grab*100;
   int spentBalance = capital_one_grab*100;
   
-  char *timeFormatted = secToMinHrDay(timeDiff);
-  text_layer_set_text(text_time_layer, timeFormatted); 
-  APP_LOG(APP_LOG_LEVEL_INFO, "timeFormatted: %s", timeFormatted);
+//   char *timeFormatted = secToMinHrDay(timeDiff);
+//   text_layer_set_text(text_time_layer, timeFormatted); 
+//   APP_LOG(APP_LOG_LEVEL_INFO, "timeFormatted: %s", timeFormatted);
   //free(timeFormatted);
   
   //Manual limit
@@ -277,37 +277,45 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     
     // payee
     tuple = dict_find(iterator, startingPoint);
+    bills[i].payee[0] = '\0';
     snprintf(bills[i].payee, sizeof(bills[i].payee), "%s", tuple->value->cstring);
     printf("Payee = %s\n", bills[i].payee);
     
     // payment amount
     tuple = dict_find(iterator, startingPoint + 1);
     bills[i].amount = (int) tuple->value->int32;
+    bills[i].amt[0] = '\0';
     snprintf(bills[i].amt,sizeof(bills[i].amt),"%s%d","$",bills[i].amount);
     printf("Amount = %d\n", bills[i].amount);
 
     // month
     tuple = dict_find(iterator, startingPoint + 2);
     bills[i].month = (int) tuple->value->int32;
+    bills[i].mnth[0] = '\0';
     snprintf(bills[i].mnth,sizeof(bills[i].mnth),"%02d",bills[i].month);
     printf("Month = %d\n", bills[i].month);
     
     // day
     tuple = dict_find(iterator, startingPoint + 3);
     bills[i].day = (int) tuple->value->int32;
+    bills[i].dy[0] = '\0';
     snprintf(bills[i].dy,sizeof(bills[i].dy),"%02d",bills[i].day);
     printf("Day = %d\n", bills[i].day);
     
     // year 
     tuple = dict_find(iterator, startingPoint + 4);
+    bills[i].yr[0] = '\0';
     bills[i].year = (int) tuple->value->int32;
     snprintf(bills[i].yr,sizeof(bills[i].yr),"%02d",bills[i].year);
     printf("Year = %d\n", bills[i].year);
 
     // title including amount paid, payee
+    bills[i].title[0] = '\0';
     snprintf(bills[i].title, sizeof(bills[i].title), "%s%s%s", bills[i].amt, "     ", bills[i].payee);
     // subtitle including clean date
-    snprintf(bills[i].fulldate, sizeof(bills[i].fulldate), "%s%s%s%s%s", bills[i].mnth, "/", bills[i].dy, "/", bills[i].yr);
+    bills[i].fulldate[0] = '\0';
+    snprintf(bills[i].fulldate, sizeof(bills[i].fulldate), "%02d%02d%02d", bills[i].day, bills[i].month, bills[i].year); //"%s%s%s", bills[i].mnth, bills[i].dy, bills[i].yr);
+    printf("date = %s\n", bills[i].fulldate);
   }
 }
   
