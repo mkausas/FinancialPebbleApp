@@ -45,21 +45,18 @@ function getInfo(type) {
 Pebble.addEventListener('ready', 
   function(e) {
     console.log("PebbleKit JS ready!");
-  
-//     var info = {};
-    
-    var type = 1;
+      
     // Get capital one info
-    var json = getInfo(type);
+    var json = getInfo(1);
   
     console.log("Current Balance: " + json[0].balance);
-//     info["balance"] = json[0].balance;
-    var info = {"BALANCE" : json[0].balance};
+    var info = {0 : json[0].balance};
+    
     // grab the bill data
     json = getInfo(0);
     var numBills = json.length;
     console.log("Number of Bills: " + numBills);
-    info["BILL_COUNT"] = numBills;
+    info[1] = numBills;
     
     for (var i = 0; i < numBills; i++) {
       var currentBill = json[i]; 
@@ -73,13 +70,13 @@ Pebble.addEventListener('ready',
       
       var startingPoint = (i * 5) + 2;
       // bill payee and amount
-      info[startingPoint + ""] = currentBill.payee;
-      info[startingPoint + 1 + ""] = currentBill.payment_amount;
+      info[startingPoint] = currentBill.payee;
+      info[startingPoint + 1] = currentBill.payment_amount;
       
       // Date info
-      info[startingPoint + 2 + ""] = parseInt(splitDate[0]);
-      info[startingPoint + 3 + ""] = parseInt(splitDate[1]);
-      info[startingPoint + 4 + ""] = parseInt(splitDate[2]);
+      info[startingPoint + 2] = parseInt(splitDate[0]);
+      info[startingPoint + 3] = parseInt(splitDate[1]);
+      info[startingPoint + 4] = parseInt(splitDate[2]);
       console.log("Month " + parseInt(splitDate[0]));
       console.log("Day " + parseInt(splitDate[1]));
       console.log("Year " + parseInt(splitDate[2]));
