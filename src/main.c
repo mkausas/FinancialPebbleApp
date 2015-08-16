@@ -27,6 +27,15 @@ static double set_limit = 60; //TODO: set by settings
 static AppTimer *s_timer;
 static bool checkColor = true;
 
+int start_month;
+int start_day;
+int start_year;
+int end_month;
+int end_day;
+int end_year;
+int budget;
+
+
 //change to new window
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   billing_start();
@@ -322,69 +331,118 @@ int getNumBills(void) {
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-
+  printf("MADE IT\n");
+  
   // start reading default items
   Tuple *tuple;
   
-  // balance
-  tuple = dict_find(iterator, 0);
-  int accountBalance = (int) tuple->value->int32; 
-  accounts_grab = accountBalance;
-  printf("balance tuple value = %d", accountBalance);
-  
-  // num bills
-  tuple = dict_find(iterator, 1);
-  numBills = (int) tuple->value->int32;
-  printf("bill count tuple value = %d", numBills);
-  bills = (Bill *) calloc(numBills, sizeof(Bill));
-  
-  for (int i = 0; i < numBills; i++) {
-    printf("Bill number: %d\n", i);
-    
-    int startingPoint = (i * 5) + 2;
-    
-    // payee
-    tuple = dict_find(iterator, startingPoint);
-    bills[i].payee[0] = '\0';
-    snprintf(bills[i].payee, sizeof(bills[i].payee), "%s", tuple->value->cstring);
-    printf("Payee = %s\n", bills[i].payee);
-    
-    // payment amount
-    tuple = dict_find(iterator, startingPoint + 1);
-    bills[i].amount = (int) tuple->value->int32;
-    bills[i].amt[0] = '\0';
-    snprintf(bills[i].amt,sizeof(bills[i].amt),"%s%d","$",bills[i].amount);
-    printf("Amount = %d\n", bills[i].amount);
+  tuple = dict_find(iterator, 300);
 
-    // month
-    tuple = dict_find(iterator, startingPoint + 2);
-    bills[i].month = (int) tuple->value->int32;
-    bills[i].mnth[0] = '\0';
-    snprintf(bills[i].mnth,sizeof(bills[i].mnth),"%02d",bills[i].month);
-    printf("Month = %d\n", bills[i].month);
-    
-    // day
-    tuple = dict_find(iterator, startingPoint + 3);
-    bills[i].day = (int) tuple->value->int32;
-    bills[i].dy[0] = '\0';
-    snprintf(bills[i].dy,sizeof(bills[i].dy),"%02d",bills[i].day);
-    printf("Day = %d\n", bills[i].day);
-    
-    // year 
-    tuple = dict_find(iterator, startingPoint + 4);
-    bills[i].yr[0] = '\0';
-    bills[i].year = (int) tuple->value->int32;
-    snprintf(bills[i].yr,sizeof(bills[i].yr),"%02d",bills[i].year);
-    printf("Year = %d\n", bills[i].year);
+  int config = (int) tuple->value->int32;
 
-    // title including amount paid, payee
-    bills[i].title[0] = '\0';
-    snprintf(bills[i].title, sizeof(bills[i].title), "%s%s%s", bills[i].amt, "     ", bills[i].payee);
-    // subtitle including clean date
-    bills[i].fulldate[0] = '\0';
-    snprintf(bills[i].fulldate, sizeof(bills[i].fulldate), "%02d%02d%02d", bills[i].day, bills[i].month, bills[i].year); //"%s%s%s", bills[i].mnth, bills[i].dy, bills[i].yr);
-    printf("date = %s\n", bills[i].fulldate);
+  printf("config = %d", config);
+  
+  if (config == 0) {
+
+    // balance
+    tuple = dict_find(iterator, 0);
+    int accountBalance = (int) tuple->value->int32; 
+    accounts_grab = accountBalance;
+    printf("balance tuple value = %d", accountBalance);
+    
+    // num bills
+    tuple = dict_find(iterator, 1);
+    numBills = (int) tuple->value->int32;
+    printf("bill count tuple value = %d", numBills);
+    bills = (Bill *) calloc(numBills, sizeof(Bill));
+    
+    for (int i = 0; i < numBills; i++) {
+      printf("Bill number: %d\n", i);
+      
+      int startingPoint = (i * 5) + 2;
+      
+      // payee
+      tuple = dict_find(iterator, startingPoint);
+      bills[i].payee[0] = '\0';
+      snprintf(bills[i].payee, sizeof(bills[i].payee), "%s", tuple->value->cstring);
+      printf("Payee = %s\n", bills[i].payee);
+      
+      // payment amount
+      tuple = dict_find(iterator, startingPoint + 1);
+      bills[i].amount = (int) tuple->value->int32;
+      bills[i].amt[0] = '\0';
+      snprintf(bills[i].amt,sizeof(bills[i].amt),"%s%d","$",bills[i].amount);
+      printf("Amount = %d\n", bills[i].amount);
+  
+      // month
+      tuple = dict_find(iterator, startingPoint + 2);
+      bills[i].month = (int) tuple->value->int32;
+      bills[i].mnth[0] = '\0';
+      snprintf(bills[i].mnth,sizeof(bills[i].mnth),"%02d",bills[i].month);
+      printf("Month = %d\n", bills[i].month);
+      
+      // day
+      tuple = dict_find(iterator, startingPoint + 3);
+      bills[i].day = (int) tuple->value->int32;
+      bills[i].dy[0] = '\0';
+      snprintf(bills[i].dy,sizeof(bills[i].dy),"%02d",bills[i].day);
+      printf("Day = %d\n", bills[i].day);
+      
+      // year 
+      tuple = dict_find(iterator, startingPoint + 4);
+      bills[i].yr[0] = '\0';
+      bills[i].year = (int) tuple->value->int32;
+      snprintf(bills[i].yr,sizeof(bills[i].yr),"%02d",bills[i].year);
+      printf("Year = %d\n", bills[i].year);
+  
+      // title including amount paid, payee
+      bills[i].title[0] = '\0';
+      snprintf(bills[i].title, sizeof(bills[i].title), "%s%s%s", bills[i].amt, "     ", bills[i].payee);
+      // subtitle including clean date
+      bills[i].fulldate[0] = '\0';
+      snprintf(bills[i].fulldate, sizeof(bills[i].fulldate), "%02d%02d%02d", bills[i].day, bills[i].month, bills[i].year); //"%s%s%s", bills[i].mnth, bills[i].dy, bills[i].yr);
+      printf("date = %s\n", bills[i].fulldate);
+    }
+  } else {
+      printf("MADE IT5\n");
+
+    // start_month
+    tuple = dict_find(iterator, 1000);
+    start_month = (int) tuple->value->int32; 
+    printf("start_month tuple value = %d", start_month);
+  
+    // start_day
+    tuple = dict_find(iterator, 1001);
+    start_day = (int) tuple->value->int32; 
+    printf("start_day tuple value = %d", start_day);
+  
+    // start_year
+    tuple = dict_find(iterator, 1002);
+    start_year = (int) tuple->value->int32; 
+    printf("start_day tuple value = %d", start_year);
+  
+    // end_month
+    tuple = dict_find(iterator, 1003);
+    end_month = (int) tuple->value->int32; 
+    printf("end_month tuple value = %d", end_month);
+  
+    // end_day
+    tuple = dict_find(iterator, 1004);
+    end_day = (int) tuple->value->int32; 
+    printf("end_day tuple value = %d", end_day);
+  
+    // start_year
+    tuple = dict_find(iterator, 1005);
+    end_year = (int) tuple->value->int32; 
+    printf("end_year tuple value = %d", end_year);
+  
+    // end_month
+    tuple = dict_find(iterator, 1006);
+    budget = (int) tuple->value->int32; 
+    printf("budget tuple value = %d", budget);
   }
+  
+  
   layer_mark_dirty(main_layer);
 }
   
